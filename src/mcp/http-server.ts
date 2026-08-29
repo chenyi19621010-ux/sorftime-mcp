@@ -42,6 +42,14 @@ function identityGuard(context: McpAppContext) {
   };
 }
 
+function privatePathBearer(request: Request, _response: Response, next: NextFunction): void {
+  const token = request.params.privateMcpKey;
+  if (typeof token === "string" && !request.header("authorization")) {
+    request.headers.authorization = `Bearer ${token}`;
+  }
+  next();
+}
+
 function originGuard(context: McpAppContext) {
   return (request: Request, response: Response, next: NextFunction): void => {
     const origin = request.header("origin");
@@ -98,6 +106,7 @@ export function startMcpHttpServer(context: McpAppContext): RunningHttpServer {
   app.disable("x-powered-by");
   const authenticate = identityGuard(context);
   const checkOrigin = originGuard(context);
+  const mcpPaths = ["/mcp", "/:privateMcpKey/mcp"];
   const sessions = new Map<string, SessionState>();
   const activeCleanups = new Set<() => Promise<void>>();
   let initializing = 0;
@@ -121,9 +130,9 @@ export function startMcpHttpServer(context: McpAppContext): RunningHttpServer {
       response.status(503).json({ status: "not_ready", upstreamConfigured: true, auditConfigured: false });
     }
   });
-  app.options("/mcp", checkOrigin, (_request, response) => response.status(204).end());
+  app.options(mcpPaths, checkOrigin, (_request, response) => response.status(204).end());
 
-  app.post("/mcp", checkOrigin, authenticate, rejectJsonRpcBatch, concurrencyGuard(context.config.http.maxConcurrentRequests), async (request, response) => {
+  app.post(mcpPaths, checkOrigin, privatePathBearer, authenticate, rejectJsonRpcBatch, concurrencyGuard(context.config.http.maxConcurrentRequests), async (request, response) => {
     const identity = response.locals.identity as McpIdentity;
     const requestedSessionId = request.header("mcp-session-id");
     let session = requestedSessionId ? sessions.get(requestedSessionId) : undefined;
@@ -181,7 +190,7 @@ export function startMcpHttpServer(context: McpAppContext): RunningHttpServer {
     }
   });
 
-  app.get("/mcp", checkOrigin, authenticate, async (request, response) => {
+  app.get(mcpPaths, checkOrigin, privatePathBearer, authenticate, async (request, response) => {
     const identity = response.locals.identity as McpIdentity;
     const sessionId = request.header("mcp-session-id");
     const session = sessionId ? sessions.get(sessionId) : undefined;
@@ -193,7 +202,7 @@ export function startMcpHttpServer(context: McpAppContext): RunningHttpServer {
     await session.transport.handleRequest(request, response);
   });
 
-  app.delete("/mcp", checkOrigin, authenticate, async (request, response) => {
+  app.delete(mcpPaths, checkOrigin, privatePathBearer, authenticate, async (request, response) => {
     const identity = response.locals.identity as McpIdentity;
     const sessionId = request.header("mcp-session-id");
     const session = sessionId ? sessions.get(sessionId) : undefined;
