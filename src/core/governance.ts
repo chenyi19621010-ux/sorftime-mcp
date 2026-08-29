@@ -3,7 +3,7 @@ import { ValidationError } from "../errors.js";
 
 export type BillingKind = "free" | "request" | "coin" | "recurring_coin" | "unknown";
 export type EndpointEffect = "read" | "create" | "update" | "delete";
-export type EndpointExposure = "reader" | "admin" | "disabled";
+export type EndpointExposure = "reader" | "admin" | "full_admin";
 
 export interface EndpointGovernance {
   billing: BillingKind;
@@ -12,11 +12,11 @@ export interface EndpointGovernance {
   reason: string;
 }
 
-const disabledRead = (billing: BillingKind, reason = "Paid reads are disabled in the initial MCP policy"): EndpointGovernance => ({
-  billing, effect: "read", exposure: "disabled", reason,
+const fullAdminRead = (billing: BillingKind, reason = "Available only in explicitly enabled full-admin MCP mode"): EndpointGovernance => ({
+  billing, effect: "read", exposure: "full_admin", reason,
 });
-const disabledWrite = (billing: BillingKind, effect: Exclude<EndpointEffect, "read">): EndpointGovernance => ({
-  billing, effect, exposure: "disabled", reason: "State-changing and task-creating calls are disabled in the initial MCP policy",
+const fullAdminWrite = (billing: BillingKind, effect: Exclude<EndpointEffect, "read">): EndpointGovernance => ({
+  billing, effect, exposure: "full_admin", reason: "Available only in explicitly enabled full-admin MCP mode with confirmation",
 });
 const reader = (reason = "Free read-only endpoint approved for governed team access"): EndpointGovernance => ({
   billing: "free", effect: "read", exposure: "reader", reason,
@@ -25,54 +25,54 @@ const admin = (reason: string): EndpointGovernance => ({ billing: "free", effect
 
 /** Exhaustive machine policy. Never infer authorization from the human-readable `cost` field. */
 export const ENDPOINT_GOVERNANCE: Readonly<Record<string, EndpointGovernance>> = {
-  CategoryTree: disabledRead("request"),
-  CategoryRequest: disabledRead("request"),
-  CategoryProducts: disabledRead("request"),
-  CategoryTrend: disabledRead("request"),
-  ProductRequest: disabledRead("request"),
-  ProductQuery: disabledRead("request"),
-  AsinSalesVolume: disabledRead("request"),
-  ProductVariationHistory: disabledRead("request"),
-  ProductRealtimeRequest: disabledWrite("request", "create"),
-  ProductRealtimeRequestStatusQuery: disabledRead("request"),
-  ProductReviewsCollection: disabledWrite("coin", "create"),
+  CategoryTree: fullAdminRead("request"),
+  CategoryRequest: fullAdminRead("request"),
+  CategoryProducts: fullAdminRead("request"),
+  CategoryTrend: fullAdminRead("request"),
+  ProductRequest: fullAdminRead("request"),
+  ProductQuery: fullAdminRead("request"),
+  AsinSalesVolume: fullAdminRead("request"),
+  ProductVariationHistory: fullAdminRead("request"),
+  ProductRealtimeRequest: fullAdminWrite("request", "create"),
+  ProductRealtimeRequestStatusQuery: fullAdminRead("request"),
+  ProductReviewsCollection: fullAdminWrite("coin", "create"),
   ProductReviewsCollectionStatusQuery: admin("Existing review-task status is account-level shared data"),
-  ProductReviewsQuery: disabledRead("request"),
-  SimilarProductRealtimeRequest: disabledWrite("request", "create"),
+  ProductReviewsQuery: fullAdminRead("request"),
+  SimilarProductRealtimeRequest: fullAdminWrite("request", "create"),
   SimilarProductRealtimeRequestStatusQuery: admin("Existing image-search task status is account-level shared data"),
   SimilarProductRealtimeRequestCollection: admin("Existing image-search results require an administrator-provided task ID"),
-  KeywordQuery: disabledRead("request"),
-  KeywordSearchResults: disabledRead("request"),
-  KeywordRequest: disabledRead("request"),
-  KeywordSearchResultTrend: disabledRead("request"),
-  CategoryRequestKeyword: disabledRead("request"),
-  ASINRequestKeyword: disabledRead("request"),
-  KeywordProductRanking: disabledRead("request"),
-  ASINKeywordRanking: disabledRead("request"),
-  KeywordExtends: disabledRead("request"),
-  FavoriteKeyword: disabledWrite("request", "create"),
-  ChangeFavoriteKeyword: disabledWrite("request", "update"),
-  GetFavoriteKeyword: disabledRead("unknown", "Undocumented cost and request schema; disabled fail-closed"),
-  KeywordBatchSubscription: disabledWrite("recurring_coin", "create"),
+  KeywordQuery: fullAdminRead("request"),
+  KeywordSearchResults: fullAdminRead("request"),
+  KeywordRequest: fullAdminRead("request"),
+  KeywordSearchResultTrend: fullAdminRead("request"),
+  CategoryRequestKeyword: fullAdminRead("request"),
+  ASINRequestKeyword: fullAdminRead("request"),
+  KeywordProductRanking: fullAdminRead("request"),
+  ASINKeywordRanking: fullAdminRead("request"),
+  KeywordExtends: fullAdminRead("request"),
+  FavoriteKeyword: fullAdminWrite("request", "create"),
+  ChangeFavoriteKeyword: fullAdminWrite("request", "update"),
+  GetFavoriteKeyword: fullAdminRead("unknown", "Undocumented cost and request schema; full-admin confirmation required"),
+  KeywordBatchSubscription: fullAdminWrite("recurring_coin", "create"),
   KeywordTasks: reader(),
-  KeywordBatchTaskUpdate: disabledWrite("free", "update"),
+  KeywordBatchTaskUpdate: fullAdminWrite("free", "update"),
   KeywordBatchScheduleList: reader(),
   KeywordBatchScheduleDetail: reader(),
-  BestSellerListSubscription: disabledWrite("recurring_coin", "create"),
+  BestSellerListSubscription: fullAdminWrite("recurring_coin", "create"),
   BestSellerListTask: reader(),
-  BestSellerListDelete: disabledWrite("free", "delete"),
+  BestSellerListDelete: fullAdminWrite("free", "delete"),
   BestSellerListDataCollect: reader(),
-  ProductSellerSubscription: disabledWrite("recurring_coin", "create"),
+  ProductSellerSubscription: fullAdminWrite("recurring_coin", "create"),
   ProductSellerTasks: admin("Request schema is undocumented; administrator-only experimental read"),
-  ProductSellerTaskUpdate: disabledWrite("free", "update"),
+  ProductSellerTaskUpdate: fullAdminWrite("free", "update"),
   ProductSellerTaskScheduleList: reader(),
   ProductSellerTaskScheduleDetail: reader(),
-  ASINSubscription: disabledWrite("recurring_coin", "update"),
+  ASINSubscription: fullAdminWrite("recurring_coin", "update"),
   ASINSubscriptionQuery: reader(),
   ASINSubscriptionCollection: reader(),
-  ProductAssistant: disabledWrite("request", "create"),
-  CategoryAssistant: disabledWrite("request", "create"),
-  AIResultQuery: disabledRead("request"),
+  ProductAssistant: fullAdminWrite("request", "create"),
+  CategoryAssistant: fullAdminWrite("request", "create"),
+  AIResultQuery: fullAdminRead("request"),
   AIResult: admin("Existing AI result requires an administrator-provided task ID"),
   CoinQuery: reader("Global shared-account coin balance"),
   CoinStream: admin("Detailed shared-account coin usage may expose operational activity"),
