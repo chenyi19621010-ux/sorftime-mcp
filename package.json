@@ -1,6 +1,6 @@
 {
   "name": "sorftime-mcp",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Governed Sorftime MCP server, AI Skill, and full operations CLI",
   "private": true,
   "type": "module",

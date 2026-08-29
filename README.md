@@ -4,7 +4,7 @@
 
 面向团队共享的 Sorftime 数据接入项目。它把同一个确定性 API 核心同时提供给受治理的 MCP Server 和完整 CLI，并用 Sorftime Research Skill 指导 AI 选择安全工具、处理澄清、控制成本和解释结果。
 
-- **MCP Server**：同事和 AI 助手的统一入口；Token 集中保管，按身份审计和限流；首版仅开放免费只读能力。
+- **MCP Server**：同事和 AI 助手的统一入口；Token 集中保管，按身份审计和限流；默认免费只读，也可显式启用完整管理员能力。
 - **Sorftime Research Skill**：负责自然语言路由、证据边界和回答规范，不持有 Token、不执行 HTTP。
 - **CLI**：覆盖文档实际列出的全部 52 个接口，用于管理员/开发者批处理、调试、排障和应急操作。
 
@@ -30,9 +30,16 @@ flowchart LR
 | `sorftime_get_monitoring_results` | 读取明确任务/批次/订阅标识对应的既有结果 |
 | `sorftime_check_quota` | 查看共享账户全局 Coin 与 Request 状态 |
 
-首版不开放付费查询、Coin 扣费调用、实时/AI/采集任务创建、监控增删改或 MCP `raw_call`。管理员仍可在独立运维流程中使用 CLI；Skill 不会替终端用户绕过 MCP 调 CLI。
+默认模式不开放付费查询、Coin 扣费调用、实时/AI/采集任务创建或监控增删改。管理员仍可在独立运维流程中使用 CLI；Skill 不会替终端用户绕过 MCP 调 CLI。
 
 可选管理员 MCP 工具也保持免费只读，并且只有在 `MCP_ENABLE_ADMIN_TOOLS=true` 且身份角色为 `admin` 时才会出现在工具列表中。
+
+完整管理员模式设置 `MCP_ENABLE_FULL_API_TOOLS=true`，并要求当前传输身份角色为 `admin`。此模式额外注册全部 52 个固定端点工具，名称格式为 `sorftime_<group>_<command>`。每个工具只对应一个已登记端点；不接受任意端点名。付费、未知费用、创建、更新和删除调用必须显式确认，MCP 不自动重试。
+
+| 模式 | 工具范围 | 启用条件 |
+|---|---|---|
+| `free_read_only` | 4个普通工具；可选2个管理员只读工具 | 默认；管理员工具另需 `MCP_ENABLE_ADMIN_TOOLS=true` |
+| `full_admin` | 上述工具 + 52个固定API端点工具 | `MCP_ENABLE_FULL_API_TOOLS=true` 且身份角色为 `admin` |
 
 ## 文档入口
 
@@ -56,6 +63,15 @@ cp .env.example .env
 ```
 
 在 `.env` 中配置服务端 `SORFTIME_ACCOUNT_SK`。不要把 Token 放进客户端配置或分发给同事。
+
+完整管理员模式示例（仅放在服务端环境中）：
+
+```bash
+MCP_ENABLE_FULL_API_TOOLS=true
+# 对应的 MCP_API_KEYS_JSON 记录必须使用 "role":"admin"
+```
+
+不要在聊天、截图、仓库或客户端说明中公开 API key；ChatGPT 私密路径连接仍使用同一条服务端密钥记录。
 
 本地 Streamable HTTP：
 

@@ -12,7 +12,7 @@ Read [AGENTS.md](AGENTS.md) first. It is the shared, authoritative development g
 ## Hard stops
 
 - Do not expose or request credentials.
-- Do not add paid, mutating, or raw MCP tools.
+- Keep full API tools default-off, admin-only, fixed-endpoint, audited, non-retrying, and confirmation-gated for paid or state-changing calls.
 - Do not let Skill workflows invoke the CLI.
 - Do not treat missing/unavailable data as zero or monitoring changes as causal evidence.
 - Do not change MCP contracts without updating the Skill, tests, and user documentation together.

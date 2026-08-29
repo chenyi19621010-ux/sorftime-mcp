@@ -25,29 +25,30 @@ Read the smallest relevant set before changing code:
 
 ## Compatibility baseline
 
-- package, MCP contract, and governance policy: `1.0.0`;
+- package, MCP contract, and governance policy: `1.1.0`;
 - endpoint registry: 52 Sorftime endpoints;
 - ordinary MCP surface: 4 tools, free and read-only only;
-- optional admin MCP surface: 2 tools, still free and read-only;
-- Skill: `sorftime-research`, compatible with MCP `1.0.x`;
+- optional admin MCP surface: 2 free read-only tools;
+- optional full-admin MCP surface: 52 fixed endpoint tools, default-off and admin-only;
+- Skill: `sorftime-research`, compatible with MCP `1.1.x`;
 - runtime: Node.js 20+, TypeScript, MCP SDK v1, Streamable HTTP and stdio.
 
 ## Non-negotiable invariants
 
 1. Never commit or print a real Sorftime Account-SK, MCP API key, proxy secret, Authorization header, or raw credential file.
 2. `src/core/governance.ts` must classify all 52 endpoints. MCP authorization never parses the human `cost` string.
-3. The initial MCP policy exposes only `billing=free`, `effect=read`, explicitly allowlisted endpoints.
-4. Paid reads, Coin-charged calls, task creation, updates, subscriptions, and deletes are not MCP tools.
-5. MCP never exposes `raw_call` or arbitrary endpoint/body passthrough. Raw access remains CLI-only for operators.
+3. The default MCP policy exposes only `billing=free`, `effect=read`, explicitly allowlisted endpoints.
+4. Full-admin tools appear only when `MCP_ENABLE_FULL_API_TOOLS=true` and transport identity role is `admin`. Every tool maps to one fixed endpoint; paid or state-changing calls require explicit confirmation.
+5. MCP never exposes an arbitrary endpoint-name `raw_call`. Advanced bodies are allowed only on fixed endpoints whose source schema is incomplete, with strict size/key bounds.
 6. User/tenant/role identity comes only from authenticated transport context. Tool inputs must never select or override identity.
 7. Stdio has no employee authentication; bind one principal at process launch and document it as local/operator mode.
 8. Audit records may contain actor, tenant, tool, endpoint names, marketplace, fingerprints, timing, decision, and outcome. They must not contain complete arguments, keywords, ASIN lists, headers, tokens, or upstream payloads.
 9. A free endpoint reporting positive `RequestConsumed` opens the billing circuit. Do not continue automatically.
-10. MCP retries remain zero. A lost response must not duplicate paid work; paid work is unavailable in MCP regardless.
+10. MCP retries remain zero. A lost response must not automatically repeat paid or state-changing work.
 11. Preserve exact documented wire casing (`ASIN`, `Asin`, `Asins`, `Querystartdt`). Do not normalize payload keys at the shared-client boundary.
 12. Upstream unknown schemas remain JSON. Do not invent field meanings or present missing/unavailable values as zero.
 13. Shared quota is account-global, never an employee allowance. Per-person activity comes from MCP audit, not Sorftime balance fields.
-14. The Skill must not invoke the CLI, request credentials, invent identifiers, silently substitute stale monitoring for paid realtime data, or infer causality.
+14. The Skill must not invoke the CLI, request credentials, invent identifiers, silently substitute stale monitoring for realtime data, infer causality, or repeat confirmed paid/state-changing work automatically.
 15. CLI completeness must not weaken MCP policy. CLI and MCP share the API core, not the same public command surface.
 16. HTTP production/non-loopback mode must authenticate, restrict Hosts, validate Origins when present, cap sessions/concurrency, and keep the Account-SK server-side.
 17. MCP output and errors must remain sanitized. Unexpected upstream payloads never appear in public error details.
@@ -121,7 +122,7 @@ pnpm exec vitest run test/skill-contract.test.ts test/mcp-contract.test.ts
 
 ## Review checklist
 
-- Does every reachable endpoint remain free and read-only?
+- Do ordinary reader tools remain free and read-only, and do full tools require both explicit enablement and admin identity?
 - Can an argument influence endpoint selection outside a fixed route?
 - Does role/tenant come only from transport auth?
 - Could any secret or complete input enter output, logs, audit, fixtures, docs, or git?
@@ -129,7 +130,7 @@ pnpm exec vitest run test/skill-contract.test.ts test/mcp-contract.test.ts
 - Does cancellation reach the upstream fetch?
 - Are empty, unavailable, forbidden, and zero distinct?
 - Do MCP, Skill, README, examples, tests, and policy classification agree?
-- Does the CLI still cover all 52 endpoints without changing MCP exposure?
+- Do all 52 full-admin tools map to fixed catalog endpoints without arbitrary endpoint-name passthrough?
 
 ## Git and release
 
