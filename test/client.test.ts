@@ -44,10 +44,18 @@ describe("Sorftime client", () => {
   });
 
   it("raises a transport error for non-2xx responses", async () => {
+    const stderr = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
     const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
       new Response(JSON.stringify({ error: "nope" }), { status: 403, statusText: "Forbidden" }),
     );
     await expect(requestApi(options, fetchMock)).rejects.toBeInstanceOf(NetworkError);
+    const logged = stderr.mock.calls.flat().join("");
+    expect(logged).toContain('"event":"sorftime_http_error"');
+    expect(logged).toContain('"endpoint":"CoinQuery"');
+    expect(logged).toContain('"status":403');
+    expect(logged).not.toContain("nope");
+    expect(logged).not.toContain(options.token);
+    stderr.mockRestore();
   });
 
   it("rejects non-JSON success responses unless exact raw output is requested", async () => {
