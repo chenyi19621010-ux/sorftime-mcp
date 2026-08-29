@@ -203,7 +203,7 @@ export async function runEndpoint(
     baseUrl,
     timeoutMs,
     retries,
-    userAgent: "sorftime-cli/1.0.0",
+    userAgent: "sorftime-cli/1.1.0",
   });
   const requestBody = (requestBodyValue: JsonObject): Promise<JsonValue> => core.call({
     endpoint: endpoint.name,

@@ -173,7 +173,7 @@ export async function requestApi(
           Authorization: `BasicAuth ${options.token}`,
           "Content-Type": "application/json;charset=UTF-8",
           Accept: "application/json",
-          "User-Agent": options.userAgent ?? "sorftime-cli/1.0.0",
+          "User-Agent": options.userAgent ?? "sorftime-cli/1.1.0",
         },
         body: JSON.stringify(options.body),
         signal: timed.signal,

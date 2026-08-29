@@ -12,7 +12,7 @@ import { optionName } from "./input.js";
 import { runEndpoint } from "./runner.js";
 import type { EndpointSpec, GlobalOptions, OutputFormat, StoredConfig } from "./types.js";
 
-const VERSION = "1.0.0";
+const VERSION = "1.1.0";
 const rootAbort = new AbortController();
 
 function addBodyOptions(command: Command): void {
