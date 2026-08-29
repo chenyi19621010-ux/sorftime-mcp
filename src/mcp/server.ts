@@ -6,9 +6,10 @@ import type { JsonObject, JsonValue } from "../types.js";
 import type { McpIdentity } from "./config.js";
 import type { McpAppContext } from "./context.js";
 import { executeGovernedTool } from "./executor.js";
+import { fullApiToolNames, registerFullApiTools } from "./full-tools.js";
 import { toolError, toolSuccess } from "./results.js";
 
-const VERSION = "1.0.0";
+const VERSION = "1.1.0";
 const MarketplaceSchema = z.enum(["US", "GB", "DE", "FR", "IN", "CA", "JP", "ES", "IT", "MX", "AE", "AU", "BR", "SA"]);
 const AsinSchema = z.string().trim().toUpperCase().regex(/^[A-Z0-9]{10}$/u, "ASIN must contain exactly 10 uppercase letters/digits");
 const IdSchema = z.string().trim().min(1).max(200)
@@ -91,11 +92,13 @@ export interface McpServerOptions {
 }
 
 export function createSorftimeMcpServer(context: McpAppContext, options: McpServerOptions): McpServer {
+  const fullApiEnabled = context.config.governance.enableFullApiTools && options.identity.role === "admin";
   const server = new McpServer(
     { name: "sorftime-governed-mcp", version: VERSION },
     {
-      instructions:
-        "Governed Sorftime team data service. Only explicitly allowlisted free read-only operations are available. Paid product/category/keyword research and all create/update/delete calls are intentionally unavailable. Use the Skill for routing and preserve source timestamps and warnings.",
+      instructions: fullApiEnabled
+        ? "Governed Sorftime full-admin data service. All 52 fixed endpoints are available. Paid or state-changing tools require confirmation. Never repeat charged or mutating calls automatically; preserve source, billing, warnings, and timestamps."
+        : "Governed Sorftime team data service. Only explicitly allowlisted free read-only operations are available. Paid product/category/keyword research and all create/update/delete calls are unavailable unless full-admin mode is explicitly enabled. Use the Skill for routing and preserve source timestamps and warnings.",
     },
   );
 
@@ -116,12 +119,15 @@ export function createSorftimeMcpServer(context: McpAppContext, options: McpServ
           "capabilities",
           async () => ({
             policyVersion: VERSION,
-            mode: "free_read_only",
+            mode: fullApiEnabled ? "full_admin" : "free_read_only",
             marketplaces: DOMAINS.map(({ id, code, name }) => ({ id, code, name })),
             readerTools: ["sorftime_capabilities", "sorftime_list_monitors", "sorftime_get_monitoring_results", "sorftime_check_quota"],
             adminToolsEnabled: context.config.governance.enableAdminTools && options.identity.role === "admin",
-            disabledClasses: ["paid_reads", "coin_charged_calls", "task_creation", "updates", "deletes", "mcp_raw_call"],
-            rawCallGuidance: "Use the local CLI as an administrator/developer; raw_call is not exposed through MCP.",
+            fullApiToolsEnabled: fullApiEnabled,
+            fullApiToolCount: fullApiEnabled ? fullApiToolNames().length : 0,
+            fullApiTools: fullApiEnabled ? fullApiToolNames() : [],
+            disabledClasses: fullApiEnabled ? ["mcp_arbitrary_endpoint_call"] : ["paid_reads", "coin_charged_calls", "task_creation", "updates", "deletes", "mcp_arbitrary_endpoint_call"],
+            rawCallGuidance: "Every MCP tool maps to one fixed registered Sorftime endpoint. Arbitrary endpoint-name passthrough is not exposed.",
           }),
         );
         return toolSuccess(result, summary("capabilities"));
@@ -357,6 +363,8 @@ export function createSorftimeMcpServer(context: McpAppContext, options: McpServ
       },
     );
   }
+
+  registerFullApiTools(server, context, options);
 
   return server;
 }

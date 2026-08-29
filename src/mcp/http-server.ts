@@ -120,7 +120,12 @@ export function startMcpHttpServer(context: McpAppContext): RunningHttpServer {
   reaper.unref();
 
   app.get("/healthz", (_request, response) => {
-    response.json({ status: "ok", service: "sorftime-governed-mcp", version: "1.0.0", policy: "free_read_only" });
+    response.json({
+      status: "ok",
+      service: "sorftime-governed-mcp",
+      version: "1.1.0",
+      policy: context.config.governance.enableFullApiTools ? "full_admin_enabled" : "free_read_only",
+    });
   });
   app.get("/readyz", async (_request, response) => {
     try {

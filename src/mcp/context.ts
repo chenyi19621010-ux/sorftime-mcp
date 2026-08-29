@@ -29,7 +29,7 @@ export async function createMcpAppContext(
       baseUrl: config.sorftime.baseUrl,
       timeoutMs: config.sorftime.timeoutMs,
       retries: 0,
-      userAgent: "sorftime-mcp/1.0.0",
+      userAgent: "sorftime-mcp/1.1.0",
       maxResponseBytes: config.sorftime.maxResponseBytes,
     }),
     audit: overrides.audit ?? new FileAuditSink(config.governance.auditLogPath),

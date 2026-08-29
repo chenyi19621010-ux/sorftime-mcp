@@ -51,6 +51,7 @@ const EnvironmentSchema = z.object({
   MCP_GLOBAL_RATE_LIMIT_PER_MINUTE: z.coerce.number().int().min(1).max(100_000).default(300),
   MCP_AUDIT_LOG_PATH: z.string().trim().min(1).default("var/audit.jsonl"),
   MCP_ENABLE_ADMIN_TOOLS: booleanFromEnvironment.default(false),
+  MCP_ENABLE_FULL_API_TOOLS: booleanFromEnvironment.default(false),
   MCP_STDIO_SUBJECT: z.string().trim().min(1).max(200).default("local-operator"),
   MCP_STDIO_TENANT: z.string().trim().min(1).max(200).default("local"),
   MCP_STDIO_ROLE: z.enum(["reader", "admin"]).default("reader"),
@@ -146,6 +147,7 @@ export async function loadMcpRuntimeConfig(environment: NodeJS.ProcessEnv = proc
       globalRateLimitPerMinute: env.MCP_GLOBAL_RATE_LIMIT_PER_MINUTE,
       auditLogPath: resolve(env.MCP_AUDIT_LOG_PATH),
       enableAdminTools: env.MCP_ENABLE_ADMIN_TOOLS,
+      enableFullApiTools: env.MCP_ENABLE_FULL_API_TOOLS,
     },
     stdioIdentity: {
       subject: env.MCP_STDIO_SUBJECT,
