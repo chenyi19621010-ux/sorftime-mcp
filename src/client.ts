@@ -183,6 +183,12 @@ export async function requestApi(
       const payload = parsed.value;
 
       if (!response.ok) {
+        process.stderr.write(`${JSON.stringify({
+          level: "error",
+          event: "sorftime_http_error",
+          endpoint: options.endpoint,
+          status: response.status,
+        })}\n`);
         const retryable = response.status === 408 || response.status === 429 || response.status >= 500;
         if (retryable && attempt < maxAttempts) {
           const delay = parseRetryAfter(response.headers.get("retry-after")) ?? 250 * 2 ** (attempt - 1);
