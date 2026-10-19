@@ -9,15 +9,15 @@ describe("MCP endpoint governance", () => {
     expect(new Set(ENDPOINTS.map((endpoint) => endpoint.name))).toEqual(new Set(Object.keys(ENDPOINT_GOVERNANCE)));
   });
 
-  it("only exposes endpoints that are both free and read-only", () => {
-    const exposed = Object.entries(ENDPOINT_GOVERNANCE).filter(([, policy]) => policy.exposure !== "disabled");
+  it("keeps reader/admin endpoints free and read-only and gates paid or mutating endpoints behind full admin", () => {
+    const exposed = Object.entries(ENDPOINT_GOVERNANCE).filter(([, policy]) => policy.exposure !== "full_admin");
     expect(exposed.length).toBeGreaterThan(0);
     for (const [, policy] of exposed) {
       expect(policy.billing).toBe("free");
       expect(policy.effect).toBe("read");
     }
     for (const name of ["ProductRequest", "ProductQuery", "CategoryAssistant", "KeywordBatchSubscription", "BestSellerListDelete", "ASINSubscription"]) {
-      expect(ENDPOINT_GOVERNANCE[name]?.exposure).toBe("disabled");
+      expect(ENDPOINT_GOVERNANCE[name]?.exposure).toBe("full_admin");
     }
   });
 });

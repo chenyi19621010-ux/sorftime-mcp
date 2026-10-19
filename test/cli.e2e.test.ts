@@ -1,6 +1,7 @@
 import { spawn } from "node:child_process";
 import { createServer } from "node:http";
 import { once } from "node:events";
+import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it } from "vitest";
 
 interface RunResult { stdout: string; stderr: string; code: number | null }
@@ -27,7 +28,8 @@ describe("CLI contract", () => {
 
   it("prints version and help without treating them as errors", async () => {
     const version = await runCli(["--version"], {});
-    expect(version).toEqual({ stdout: "1.0.0\n", stderr: "", code: 0 });
+    const manifest = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8")) as { version: string };
+    expect(version).toEqual({ stdout: `${manifest.version}\n`, stderr: "", code: 0 });
     const help = await runCli(["product", "--help"], {});
     expect(help.code).toBe(0);
     expect(help.stderr).toBe("");
